@@ -1,39 +1,75 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# ez_image_fetch_package
+ez_image_fetch_package is a Flutter library for efficient image fetching and caching. It integrates with Dio for fast image downloads and supports both memory and disk caching with customizable error handling.
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+# Features
+Fast image downloading with Dio
+Memory and disk caching
+Customizable error handling
+Installation
+Add the package to your pubspec.yaml:
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+# yaml
+dependencies:
+  ez_image_fetch_package: ^0.0.1
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
-
-## Features
-
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
-```dart
-const like = 'sample';
+# Usage - Basic Example
 ```
+import 'package:ez_image_fetch_package/ez_disk_cache.dart';
+import 'package:ez_image_fetch_package/ez_image_fetcher.dart';
+import 'package:ez_image_fetch_package/ez_task_manager.dart';
+import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:logger/logger.dart';
 
-## Additional information
+void main() {
+  runApp(ExampleScreen());
+}
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+class ExampleScreen extends StatelessWidget {
+  final EzImageFetcher imageFetcher = EzImageFetcher(
+    dio: Dio()
+      ..httpClientAdapter = NativeAdapter(
+          createCupertinoConfiguration: () =>
+              URLSessionConfiguration.ephemeralSessionConfiguration()),
+    diskCache: EzDiskCache(),
+    taskManager: EzTaskManager(maxRunningTask: 44),
+    errorImage: Image.asset("assets/dog.png"),
+    logger: Logger(),
+  );
+
+  ExampleScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Image Fetch Example')),
+        body: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3, // 3 columns in the grid
+            crossAxisSpacing: 8.0,
+            mainAxisSpacing: 8.0,
+          ),
+          itemCount: 25,
+          itemBuilder: (context, index) {
+            final imageUrl =
+                'https://via.placeholder.com/200x200.png?text=$index';
+            return FutureBuilder<Image>(
+              future: imageFetcher.fetchImage(imageUrl),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return const Center(child: Icon(Icons.error));
+                } else {
+                  return snapshot.data!;
+                }
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+```
